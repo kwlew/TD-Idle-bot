@@ -11,7 +11,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const { updatePresence } = require('./bot/presence');
-const { updateOnlineUsers, getOnlineUsers } = require('./utils/onlineUsers');
+const { updateStats, getStats } = require('./api/stats');
 
 const client = new Client({
     intents: [GatewayIntentBits.Guilds],
@@ -53,10 +53,10 @@ for (const file of eventFiles) {
 
 client.once(Events.ClientReady, async (client) => {
     console.log(`Logged in as ${client.user.tag}`);
-    await getOnlineUsers(); // Cache users.
-    console.log("Initial online users fetched and cached.");
-    await updateOnlineUsers(20);
-    console.log("Online users updater started with a 20-second interval.");
+    await getStats(); // Cache stats.
+    console.log("Initial stats fetched and cached.");
+    await updateStats(20); // Update stats every 20 seconds.
+    console.log("Stats updater started with a 20-second interval.");
     await updatePresence(client, 20);
     console.log("Presence updater started with a 20-second interval.");
 });

@@ -1,5 +1,5 @@
 const { ActivityType } = require('discord.js');
-const { getCachedOnlineUsers } = require('../utils/onlineUsers');
+const { getCachedOnlineUsers } = require('../api/stats');
 
 async function setPresence(client, type) {
     try {
@@ -7,8 +7,21 @@ async function setPresence(client, type) {
             const onlineUsers = await getCachedOnlineUsers();
             client.user.setActivity(`Online: ${onlineUsers}`, { type: ActivityType.Playing });
         }
+        else if (type === "stars") {
+            const { getCachedStars } = require('../api/stats');
+            const stars = await getCachedStars();
+            client.user.setActivity(`Stars: ${stars}`, { type: ActivityType.Playing });
+        }
+        else if (type === "golden") {
+            const { getCachedGolden } = require('../api/stats');
+            const golden = await getCachedGolden();
+            client.user.setActivity(`Golden: ${golden}`, { type: ActivityType.Playing });
+        }
         else if (type === "idle") {
-            client.user.setActivity(`Idle`, { type: ActivityType.Watching });
+            client.user.setActivity(`Idle`, { type: ActivityType.Playing });
+        }
+        else {
+            console.error(`Unknown presence type: ${type}`);
         }
     } catch (error) {
         console.error("Error updating presence:", error);
@@ -16,7 +29,7 @@ async function setPresence(client, type) {
 }
 
 async function updatePresence(client, interval) {
-    const types = ["online", "idle"];
+    const types = ["online", "stars", "golden", "idle"];
     let currentIndex = 0;
 
     await setPresence(client, "online");
