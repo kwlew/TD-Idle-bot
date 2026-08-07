@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { getCachedStats } = require('../../api/stats');
+const { getCachedStats, cacheVersion } = require('../../api/stats');
 const { baseEmbed } = require('../../bot/theme');
 
 module.exports = {
@@ -8,11 +8,11 @@ module.exports = {
         .setDescription('Replies with the current stats.'),
 
     async execute(interaction) {
-        await interaction.reply({ embeds: [buildEmbed(interaction)] });
+        await interaction.reply({ embeds: [await buildEmbed(interaction)] });
     }
 }
 
-function buildEmbed(interaction) {
+async function buildEmbed(interaction) {
     const { stars, golden, onlineUsers, lastUpdated } = getCachedStats();
 
     const embed = baseEmbed(interaction)
@@ -23,8 +23,10 @@ function buildEmbed(interaction) {
             { name: '👥 Online users', value: `\`${onlineUsers.toLocaleString()}\``, inline: true },
         );
 
+    let version = await cacheVersion();
+
     embed.setFooter({
-        text: lastUpdated ? `TD Idle • Last updated` : 'TD Idle • No data fetched yet',
+        text: lastUpdated ? `TD Idle v${version} • Last updated` : 'TD Idle • No data fetched yet',
         iconURL: embed.data.footer?.icon_url,
     });
 
