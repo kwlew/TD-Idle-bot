@@ -1,4 +1,5 @@
-const { Events } = require('discord.js');
+const { Events, MessageFlags } = require('discord.js');
+const { errorEmbed } = require('../bot/theme');
 
 module.exports = {
     name: Events.InteractionCreate,
@@ -16,18 +17,23 @@ module.exports = {
         try {
             await command.execute(interaction);
         } catch (error) {
-            console.error(error);
+            console.error(`Error executing ${interaction.commandName}:`, error);
 
-            if (interaction.replied || interaction.deferred) {
-                await interaction.followUp({
-                    content: 'There was an error while executing this command.',
-                    ephemeral: true,
-                });
-            } else {
-                await interaction.reply({
-                    content: 'There was an error while executing this command.',
-                    ephemeral: true,
-                });
+            const payload = {
+                embeds: [errorEmbed('There was an error while executing this command.')],
+                flags: MessageFlags.Ephemeral,
+            };
+
+            // The interaction may already be dead (3s ack window); don't let the
+            // error reply throw a second, unhandled error.
+            try {
+                if (interaction.replied || interaction.deferred) {
+                    await interaction.followUp(payload);
+                } else {
+                    await interaction.reply(payload);
+                }
+            } catch (replyError) {
+                console.error('Failed to send error reply:', replyError);
             }
         }
     },

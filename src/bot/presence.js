@@ -1,48 +1,60 @@
 const { ActivityType } = require('discord.js');
-const { getCachedOnlineUsers } = require('../api/stats');
+const { getCachedStats } = require('../api/stats');
 
-async function setPresence(client, type) {
+const PRESENCE_TYPES = ["online", "stars", "golden", "idle"];
+
+let presenceTimer = null;
+
+function buildActivity(type) {
+    const { stars, golden, onlineUsers } = getCachedStats();
+
+    switch (type) {
+        case "online":
+            return `Online: ${onlineUsers.toLocaleString()}`;
+        case "stars":
+            return `Stars: ${stars.toLocaleString()}`;
+        case "golden":
+            return `Golden: ${golden.toLocaleString()}`;
+        case "idle":
+            return "Idle";
+        default:
+            return null;
+    }
+}
+
+function setPresence(client, type) {
+    const activity = buildActivity(type);
+
+    if (activity === null) {
+        console.error(`Unknown presence type: ${type}`);
+        return;
+    }
+
     try {
-        if (type === "online") {
-            const onlineUsers = await getCachedOnlineUsers();
-            client.user.setActivity(`Online: ${onlineUsers}`, { type: ActivityType.Playing });
-        }
-        else if (type === "stars") {
-            const { getCachedStars } = require('../api/stats');
-            const stars = await getCachedStars();
-            client.user.setActivity(`Stars: ${stars}`, { type: ActivityType.Playing });
-        }
-        else if (type === "golden") {
-            const { getCachedGolden } = require('../api/stats');
-            const golden = await getCachedGolden();
-            client.user.setActivity(`Golden: ${golden}`, { type: ActivityType.Playing });
-        }
-        else if (type === "idle") {
-            client.user.setActivity(`Idle`, { type: ActivityType.Playing });
-        }
-        else {
-            console.error(`Unknown presence type: ${type}`);
-        }
+        client.user.setActivity(activity, { type: ActivityType.Playing });
     } catch (error) {
         console.error("Error updating presence:", error);
     }
 }
 
-async function updatePresence(client, interval) {
-    const types = ["online", "stars", "golden", "idle"];
+function updatePresence(client, interval) {
+    stopPresenceUpdater();
+
     let currentIndex = 0;
+    setPresence(client, PRESENCE_TYPES[currentIndex]);
+    console.log(`Initial presence set to: ${PRESENCE_TYPES[currentIndex]}`);
 
-    await setPresence(client, "online");
-    console.log(`Initial presence set to: ${types[currentIndex]}`);
-
-    setInterval(() => {
-        currentIndex = (currentIndex + 1) % types.length;
-        console.log(`Switching presence to: ${types[currentIndex]}`);
-        const newType = types[currentIndex];
-        setPresence(client, newType);
+    presenceTimer = setInterval(() => {
+        currentIndex = (currentIndex + 1) % PRESENCE_TYPES.length;
+        setPresence(client, PRESENCE_TYPES[currentIndex]);
     }, interval * 1000);
 }
 
-module.exports = { setPresence, 
-    updatePresence,
- };
+function stopPresenceUpdater() {
+    if (presenceTimer) {
+        clearInterval(presenceTimer);
+        presenceTimer = null;
+    }
+}
+
+module.exports = { setPresence, updatePresence, stopPresenceUpdater };
