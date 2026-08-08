@@ -1,11 +1,17 @@
 const log = require('../utils/logger');
 const supabase = require('./supabaseClient');
 
-const COIN = '🪙';
-const DAILY_AMOUNT = 100;
+const CURRENCY_NAME = 'gems';
+const CURRENCY_NAME_SINGULAR = 'gem';
+const COIN = '💎';
+const DAILY_AMOUNT = 1000; // 500-1500 coins
 const DAILY_COOLDOWN_SECONDS = 24 * 60 * 60;
 
-function assertPositiveInteger(amount, fnName) {
+const MIN_WORK_AMOUNT = 100;
+const MAX_WORK_AMOUNT = 1200;
+const WORK_COOLDOWN_SECONDS = 60 * 60; // 1 hour
+
+async function assertPositiveInteger(amount, fnName) {
     if (!Number.isInteger(amount) || amount <= 0) {
         throw new RangeError(`${fnName} amount must be a positive integer, got ${amount}`);
     }
@@ -59,11 +65,19 @@ async function removeCoins(userId, amount) {
     return data !== null; // null => the WHERE clause found no eligible row (insufficient funds)
 }
 
+async function pay(userId, recipientId, amount) {
+    await assertPositiveInteger(amount, 'pay');
+    await assertPositiveInteger(await getBalance(userId), 'pay');
+
+    await addCoins(recipientId, amount);
+    await removeCoins(userId, amount);
+}
+
 async function claimDaily(userId) {
     const { data, error } = await supabase
         .rpc('claim_daily', {
             p_user_id: userId,
-            p_amount: DAILY_AMOUNT,
+            p_amount: Math.round(DAILY_AMOUNT * (Math.random() + 0.5)),
             p_cooldown_seconds: DAILY_COOLDOWN_SECONDS,
         })
         .single();
@@ -71,6 +85,29 @@ async function claimDaily(userId) {
     if (error) {
         log.error('Failed to claim daily:', error);
         throw new Error('Could not claim daily coins.');
+    }
+
+    return {
+        claimed: data.claimed,
+        amount: data.amount,
+        balance: data.balance,
+        remainingMs: data.remaining_seconds * 1000,
+    };
+}
+
+async function claimWork(userId) {
+    const { data, error } = await supabase
+        .rpc('claim_work', {
+            p_user_id: userId,
+            p_min: MIN_WORK_AMOUNT,
+            p_max: MAX_WORK_AMOUNT,
+            p_cooldown_seconds: WORK_COOLDOWN_SECONDS,
+        })
+        .single();
+
+    if (error) {
+        log.error('Failed to claim work:', error);
+        throw new Error('Could not claim work coins.');
     }
 
     return {
@@ -92,11 +129,16 @@ async function ensureReady() {
 }
 
 module.exports = {
+    assertPositiveInteger,
+    CURRENCY_NAME,
+    CURRENCY_NAME_SINGULAR,
     COIN,
     DAILY_AMOUNT,
     getBalance,
     addCoins,
     removeCoins,
+    pay,
     claimDaily,
+    claimWork,
     ensureReady,
 };

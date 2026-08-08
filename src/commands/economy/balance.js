@@ -1,11 +1,11 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { getBalance, COIN } = require('../../persistence/economy');
+const { getBalance, COIN, CURRENCY_NAME, CURRENCY_NAME_SINGULAR } = require('../../persistence/economy');
 const { baseEmbed } = require('../../bot/theme');
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('balance')
-        .setDescription("Check your (or someone else's) coin balance.")
+        .setDescription(`Check your (or someone else's) ${CURRENCY_NAME_SINGULAR} balance.`)
         .addUserOption(option =>
             option.setName('user')
                 .setDescription('The user to check (defaults to you).')
@@ -18,7 +18,7 @@ module.exports = {
 
         const embed = baseEmbed(interaction)
             .setTitle(`${COIN} Balance`)
-            .setDescription(`${isSelf ? 'You have' : `**${target.username}** has`} **${balance.toLocaleString()}** coins.`);
+            .setDescription(`${isSelf ? 'You have' : `**${target.username}** has`} **${balance.toLocaleString()}** ${CURRENCY_NAME}.`);
 
         await interaction.reply({ embeds: [embed] });
     },
