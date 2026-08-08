@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require("discord.js");
+const { SlashCommandBuilder, MessageFlags } = require("discord.js");
 const { baseEmbed, COLORS } = require("../../bot/theme");
 const { pay, assertPositiveInteger, getBalance, COIN, CURRENCY_NAME } = require("../../persistence/economy");
 
@@ -25,7 +25,7 @@ module.exports = {
             const embed = baseEmbed(interaction, { color: COLORS.error })
                 .setTitle(`${COIN} Payment Error`)
                 .setDescription("The user to pay could not be found.");
-            await interaction.reply({ embeds: [embed] });
+            await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
             return;
         }
 
@@ -33,13 +33,13 @@ module.exports = {
             const embed = baseEmbed(interaction, { color: COLORS.error })
                 .setTitle(`${COIN} Payment Error`)
                 .setDescription("You cannot pay a bot.");
-            await interaction.reply({ embeds: [embed] });
+            await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
             return;
         }
 
         if (user.id === interaction.user.id) {
             const embed = await buildYouCannotPayYourselfEmbed(interaction);
-            await interaction.reply({ embeds: [embed] });
+            await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
             return;
         }
 
@@ -47,7 +47,7 @@ module.exports = {
             const embed = baseEmbed(interaction, { color: COLORS.error })
                 .setTitle(`${COIN} Payment Error`)
                 .setDescription(`The amount of ${CURRENCY_NAME} to pay must be a positive integer.`);
-            await interaction.reply({ embeds: [embed] });
+            await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
             return;
         }
 

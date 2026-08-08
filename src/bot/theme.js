@@ -4,6 +4,7 @@ const COLORS = {
     brand: 0x38FF30,
     success: 0x38FF30,
     warning: 0xFFC93C,
+    delay: 0xFA9B05,
     error: 0xFF4F4F,
 };
 

@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const { getBalance, COIN, CURRENCY_NAME, CURRENCY_NAME_SINGULAR, validUser } = require('../../persistence/economy');
 const { baseEmbed, COLORS } = require('../../bot/theme');
 
@@ -17,7 +17,7 @@ module.exports = {
             const embed = baseEmbed(interaction, { color: COLORS.error })
                 .setTitle(`${COIN} Error`)
                 .setDescription('Bots do not have wallets.');
-            await interaction.reply({ embeds: [embed], ephemeral: true });
+            await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
             return;
         }
         const balance = await getBalance(target.id);
@@ -28,7 +28,7 @@ module.exports = {
             .setDescription(`${isSelf ? 'You have' : `**${target.username}** has`} **${balance.toLocaleString()}** ${CURRENCY_NAME}.`)
             .setFooter({
                 text: isSelf ? messages[Math.floor(Math.random() * messages.length)] : `${target.username}'s balance`,
-                iconURL: isSelf ? null : target.displayAvatarURL()
+                iconURL: target.displayAvatarURL()
             })
 
         await interaction.reply({ embeds: [embed] });
