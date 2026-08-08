@@ -14,8 +14,8 @@ const { updatePresence, stopPresenceUpdater } = require('./bot/presence');
 const { getStats, startStatsUpdater, stopStatsUpdater, getVersion } = require('./api/stats');
 const { setDescription, updateDescription, stopDescriptionUpdater } = require('./bot/description');
 
-const STATS_ACTIVE_INTERVAL = 5;  // seconds between polls while stats are moving
-const STATS_IDLE_INTERVAL = 30;    // backoff once stats go quiet
+const STATS_ACTIVE_INTERVAL = 3;  // seconds between polls while stats are moving
+const STATS_IDLE_INTERVAL = 60;    // backoff once stats go quiet
 const DESCRIPTION_INTERVAL = 120;
 const PRESENCE_INTERVAL = 20;
 
