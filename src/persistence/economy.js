@@ -17,6 +17,10 @@ async function assertPositiveInteger(amount, fnName) {
     }
 }
 
+function validUser(user) {
+    return !user
+}
+
 async function getBalance(userId) {
     const { data, error } = await supabase
         .from('wallets')
@@ -141,4 +145,5 @@ module.exports = {
     claimDaily,
     claimWork,
     ensureReady,
+    validUser,
 };

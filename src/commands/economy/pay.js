@@ -37,11 +37,11 @@ module.exports = {
             return;
         }
 
-        // if (user.id === interaction.user.id) {
-        //     const embed = await buildYouCannotPayYourselfEmbed(interaction);
-        //     await interaction.reply({ embeds: [embed] });
-        //     return;
-        // }
+        if (user.id === interaction.user.id) {
+            const embed = await buildYouCannotPayYourselfEmbed(interaction);
+            await interaction.reply({ embeds: [embed] });
+            return;
+        }
 
         if (amount <= 0) {
             const embed = baseEmbed(interaction, { color: COLORS.error })

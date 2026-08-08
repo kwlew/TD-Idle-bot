@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { claimDaily, COIN, CURRENCY_NAME } = require('../../persistence/economy');
+const { claimDaily, COIN, CURRENCY_NAME, validUser } = require('../../persistence/economy');
 const { baseEmbed, COLORS } = require('../../bot/theme');
 const { formatDuration } = require('../../utils/format');
 
