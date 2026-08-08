@@ -1,8 +1,11 @@
-const STATS_URL = process.env.STATS_URL || "https://tdidle-presence.kwlew.workers.dev/stats";
-const VERSION_URL = process.env.VERSION_URL || "https://tdidle-presence.kwlew.workers.dev/version";
+const log = require('../utils/logger');
+
+
+const STATS_URL = process.env.STATS_URL || "https://api.kwlew.dev/stats";
+const VERSION_URL = process.env.VERSION_URL || "https://api.kwlew.dev/versions";
 const FETCH_TIMEOUT_MS = 5000;
 
-let version = "unknown";
+let stable, prerelease;
 let stats = { stars: 0, golden: 0, onlineUsers: 0 };
 let lastUpdated = null;
 let updaterTimer = null;
@@ -31,9 +34,9 @@ async function getStats() {
         };
         lastUpdated = new Date();
 
-        console.log(`Stars: ${stats.stars}, Golden: ${stats.golden}, Online: ${stats.onlineUsers}`);
+        log.debug(`Stats fetched — Stars: ${stats.stars}, Golden: ${stats.golden}, Online: ${stats.onlineUsers}`);
     } catch (error) {
-        console.error("Error fetching stats:", error);
+        log.error("Error fetching stats:", error);
     }
 
     return getCachedStats();
@@ -48,17 +51,33 @@ async function getVersion() {
         }
 
         const data = await response.json();
-        console.log(`Fetched version: ${data.version}`);
-        version = data.version || "unknown";
+        stable = data.stable || "unknown";
+        prerelease = data.prerelease || "unknown";
+        log.debug(`Version fetched: ${stable} (stable), ${prerelease} (prerelease)`);
     } catch (error) {
-        console.error("Error fetching version:", error);
-        version = "unknown";
+        log.error("Error fetching version:", error);
+        stable = "unknown";
+        prerelease = "unknown";
     }
 }
 
+// Plain cache read — called on every /stats and description refresh, so it
+// stays silent rather than logging on each access.
 async function cacheVersion() {
-    console.log(`Version cached: ${version}`);
-    return version
+    return { stable, prerelease };
+}
+
+async function getCachedVersion(versionType) {
+    if (stable === undefined || prerelease === undefined) {
+        await getVersion();
+    }
+    if (versionType === "stable") {
+        return stable;
+    } else if (versionType === "prerelease") {
+        return prerelease;
+    } else {
+        throw new Error(`Invalid version type: ${versionType}`);
+    }
 }
 
 // True when any of the tracked stats differ.
@@ -87,12 +106,12 @@ function startStatsUpdater({ activeInterval = 20, idleInterval = 60, onChange } 
                 try {
                     await onChange(getCachedStats());
                 } catch (error) {
-                    console.error("Error in stats onChange handler:", error);
+                    log.error("Error in stats onChange handler:", error);
                 }
             }
         } else {
             interval = idleInterval;
-            console.log(`Stats unchanged. Next check in ${interval}s.`);
+            log.debug(`Stats unchanged, backing off to ${interval}s.`);
         }
 
         updaterTimer = setTimeout(tick, interval * 1000);
@@ -132,6 +151,7 @@ module.exports = {
     startStatsUpdater,
     stopStatsUpdater,
     cacheVersion,
+    getCachedVersion,
     getCachedStats,
     getCachedOnlineUsers,
     getCachedStars,

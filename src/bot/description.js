@@ -1,15 +1,16 @@
-const { getCachedStats, cacheVersion } = require('../api/stats');
+const log = require('../utils/logger');
+const { getCachedStats, getCachedVersion } = require('../api/stats');
 
 let lastDescription = null;
 let descriptionTimer = null;
 
 async function buildDescription() {
     const { stars, golden, onlineUsers } = await getCachedStats();
-    let version = await cacheVersion();
-    console.log(`Version = ${version}`);
+    const stable = await getCachedVersion("stable");
+    const prerelease = await getCachedVersion("prerelease");
     return `**Stars**: ${stars.toLocaleString()}, **Golden**: ${golden.toLocaleString()}, **Online**: ${onlineUsers.toLocaleString()}`
         + `\nBot created by: **https://kwlew.dev**`
-        + `\nGame Version: **v${version.toLocaleString()}**`;
+        + `\nGame Version: **v${stable}** (stable) | **v${prerelease}** (prerelease)`;
 }
 
 // Edits the application description, skipping the API call when nothing changed
@@ -26,7 +27,7 @@ async function setDescription(client) {
         lastDescription = description;
         return true;
     } catch (error) {
-        console.error('Error setting description:', error);
+        log.error('Error setting description:', error);
         return false;
     }
 }

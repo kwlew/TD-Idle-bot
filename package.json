@@ -7,14 +7,29 @@
     "doc": "docs"
   },
   "scripts": {
-    "start": "node src/index.js"
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "restart-deploy": "pm2 stop tdidle-bot && node src/deploy-commands.js --release && pm2 start tdidle-bot && pm2 logs tdidle-bot",
+    "restart-deploy-dev": "pm2 stop tdidle-bot && node src/deploy-commands.js && node src/index.js",
+    "restart": "pm2 restart tdidle-bot",
+    "stop": "pm2 stop tdidle-bot",
+    "deploy-commands": "node src/deploy-commands.js",
+    "release-commands": "node src/deploy-commands.js --release",
+    "migrate-economy": "node src/persistence/migrate-legacy-data.js"
   },
   "keywords": [],
   "type": "commonjs",
+  "license": "MIT",
+  "author": "kwlew",
+  "maintainers": [
+    "kwlew"
+  ],
   "engines": {
     "node": ">=20"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.112.2",
+    "chalk": "^4.1.2",
     "discord.js": "^14.27.0",
     "dotenv": "^17.4.2"
   }

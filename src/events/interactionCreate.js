@@ -1,5 +1,6 @@
 const { Events, MessageFlags } = require('discord.js');
 const { errorEmbed } = require('../bot/theme');
+const log = require('../utils/logger');
 
 module.exports = {
     name: Events.InteractionCreate,
@@ -10,14 +11,14 @@ module.exports = {
         const command = interaction.client.commands.get(interaction.commandName);
 
         if (!command) {
-            console.error(`No command matching ${interaction.commandName}`);
+            log.warn(`No command matching ${interaction.commandName}`);
             return;
         }
 
         try {
             await command.execute(interaction);
         } catch (error) {
-            console.error(`Error executing ${interaction.commandName}:`, error);
+            log.error(`Error executing ${interaction.commandName}:`, error);
 
             const payload = {
                 embeds: [errorEmbed('There was an error while executing this command.')],
@@ -33,7 +34,7 @@ module.exports = {
                     await interaction.reply(payload);
                 }
             } catch (replyError) {
-                console.error('Failed to send error reply:', replyError);
+                log.error('Failed to send error reply:', replyError);
             }
         }
     },

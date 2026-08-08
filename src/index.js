@@ -10,9 +10,12 @@ const {
 const fs = require('node:fs');
 const path = require('node:path');
 
+const log = require('./utils/logger');
+
 const { updatePresence, stopPresenceUpdater } = require('./bot/presence');
 const { getStats, startStatsUpdater, stopStatsUpdater, getVersion } = require('./api/stats');
 const { setDescription, updateDescription, stopDescriptionUpdater } = require('./bot/description');
+const economy = require('./persistence/economy');
 
 const STATS_ACTIVE_INTERVAL = 3;  // seconds between polls while stats are moving
 const STATS_IDLE_INTERVAL = 60;    // backoff once stats go quiet
@@ -40,12 +43,13 @@ for (const entry of fs.readdirSync(foldersPath, { withFileTypes: true })) {
 
         if ('data' in command && 'execute' in command) {
             client.commands.set(command.data.name, command);
-            console.log(`Loaded command: ${command.data.name}`);
         } else {
-            console.warn(`[WARN] ${filePath} is missing "data" or "execute".`);
+            log.warn(`${filePath} is missing "data" or "execute" — skipped.`);
         }
     }
 }
+
+log.success(`Loaded ${client.commands.size} command${client.commands.size === 1 ? '' : 's'}: ${[...client.commands.keys()].join(', ')}`);
 
 // Load events
 const eventsPath = path.join(__dirname, 'events');
@@ -62,17 +66,16 @@ for (const file of eventFiles) {
 }
 
 client.once(Events.ClientReady, async (client) => {
-    console.log(`Logged in as ${client.user.tag}`);
+    log.success(`Logged in as ${client.user.tag}`);
 
-    await getVersion(); // Prime the version cache before anything reads it.
-    console.log("Initial version fetched and cached.");
+    await economy.ensureReady(); // fail loudly now, not on someone's first /daily
+    log.success('Connected to Supabase.');
 
-    await getStats(); // Prime the cache before anything reads it.
-    console.log("Initial stats fetched and cached.");
+    // Prime the caches before anything reads them.
+    await Promise.all([getVersion(), getStats()]);
 
     await setDescription(client);
     updateDescription(client, DESCRIPTION_INTERVAL);
-    console.log(`Description updater started with a ${DESCRIPTION_INTERVAL}-second interval.`);
 
     // Refresh the description as soon as the numbers actually move, rather than
     // waiting out the full description interval.
@@ -81,14 +84,14 @@ client.once(Events.ClientReady, async (client) => {
         idleInterval: STATS_IDLE_INTERVAL,
         onChange: () => setDescription(client),
     });
-    console.log(`Stats updater started (${STATS_ACTIVE_INTERVAL}s active / ${STATS_IDLE_INTERVAL}s idle).`);
 
     updatePresence(client, PRESENCE_INTERVAL);
-    console.log(`Presence updater started with a ${PRESENCE_INTERVAL}-second interval.`);
+
+    log.success(`Bot ready — stats every ${STATS_ACTIVE_INTERVAL}s/${STATS_IDLE_INTERVAL}s, description every ${DESCRIPTION_INTERVAL}s, presence every ${PRESENCE_INTERVAL}s.`);
 });
 
-client.on(Events.Error, (error) => console.error("Client error:", error));
-process.on("unhandledRejection", (error) => console.error("Unhandled rejection:", error));
+client.on(Events.Error, (error) => log.error("Client error:", error));
+process.on("unhandledRejection", (error) => log.error("Unhandled rejection:", error));
 
 let shuttingDown = false;
 
@@ -96,7 +99,7 @@ async function shutdown(signal) {
     if (shuttingDown) return;
     shuttingDown = true;
 
-    console.log(`Received ${signal}, shutting down...`);
+    log.info(`Received ${signal}, shutting down...`);
     stopStatsUpdater();
     stopDescriptionUpdater();
     stopPresenceUpdater();
@@ -108,6 +111,6 @@ process.on("SIGINT", () => shutdown("SIGINT"));
 process.on("SIGTERM", () => shutdown("SIGTERM"));
 
 client.login(process.env.BOT_TOKEN).catch((error) => {
-    console.error("Failed to log in. Check BOT_TOKEN in your .env file.", error);
+    log.error("Failed to log in. Check BOT_TOKEN in your .env file.", error);
     process.exit(1);
 });

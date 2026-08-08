@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { getCachedStats, cacheVersion } = require('../../api/stats');
+const { getCachedStats, getCachedVersion } = require('../../api/stats');
 const { baseEmbed } = require('../../bot/theme');
 
 module.exports = {
@@ -23,7 +23,7 @@ async function buildEmbed(interaction) {
             { name: '👥 Online users', value: `\`${onlineUsers.toLocaleString()}\``, inline: true },
         );
 
-    let version = await cacheVersion();
+    let version = await getCachedVersion("prerelease");
 
     embed.setFooter({
         text: lastUpdated ? `TD Idle v${version} • Last updated` : 'TD Idle • No data fetched yet',

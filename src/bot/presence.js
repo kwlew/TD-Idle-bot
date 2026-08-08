@@ -1,5 +1,6 @@
 const { ActivityType } = require('discord.js');
 const { getCachedStats } = require('../api/stats');
+const log = require('../utils/logger');
 
 const PRESENCE_TYPES = ["online", "stars", "golden", "idle"];
 
@@ -26,14 +27,14 @@ function setPresence(client, type) {
     const activity = buildActivity(type);
 
     if (activity === null) {
-        console.error(`Unknown presence type: ${type}`);
+        log.warn(`Unknown presence type: ${type}`);
         return;
     }
 
     try {
         client.user.setActivity(activity, { type: ActivityType.Playing });
     } catch (error) {
-        console.error("Error updating presence:", error);
+        log.error("Error updating presence:", error);
     }
 }
 
@@ -42,7 +43,6 @@ function updatePresence(client, interval) {
 
     let currentIndex = 0;
     setPresence(client, PRESENCE_TYPES[currentIndex]);
-    console.log(`Initial presence set to: ${PRESENCE_TYPES[currentIndex]}`);
 
     presenceTimer = setInterval(() => {
         currentIndex = (currentIndex + 1) % PRESENCE_TYPES.length;
