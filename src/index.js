@@ -15,12 +15,14 @@ const log = require('./utils/logger');
 const { updatePresence, stopPresenceUpdater } = require('./bot/presence');
 const { getStats, startStatsUpdater, stopStatsUpdater, getVersion } = require('./api/stats');
 const { setDescription, updateDescription, stopDescriptionUpdater } = require('./bot/description');
+const { startReminders, stopReminders } = require('./bot/reminders');
 const economy = require('./persistence/economy');
 
 const STATS_ACTIVE_INTERVAL = 3;  // seconds between polls while stats are moving
 const STATS_IDLE_INTERVAL = 60;    // backoff once stats go quiet
 const DESCRIPTION_INTERVAL = 120;
 const PRESENCE_INTERVAL = 20;
+const REMINDER_INTERVAL = 60;      // cooldowns are hours long, so a minute of slack is plenty
 
 const client = new Client({
     intents: [GatewayIntentBits.Guilds],
@@ -86,8 +88,9 @@ client.once(Events.ClientReady, async (client) => {
     });
 
     updatePresence(client, PRESENCE_INTERVAL);
+    startReminders(client, REMINDER_INTERVAL);
 
-    log.success(`Bot ready — stats every ${STATS_ACTIVE_INTERVAL}s/${STATS_IDLE_INTERVAL}s, description every ${DESCRIPTION_INTERVAL}s, presence every ${PRESENCE_INTERVAL}s.`);
+    log.success(`Bot ready — stats every ${STATS_ACTIVE_INTERVAL}s/${STATS_IDLE_INTERVAL}s, description every ${DESCRIPTION_INTERVAL}s, presence every ${PRESENCE_INTERVAL}s, reminders every ${REMINDER_INTERVAL}s.`);
 });
 
 client.on(Events.Error, (error) => log.error("Client error:", error));
@@ -103,6 +106,7 @@ async function shutdown(signal) {
     stopStatsUpdater();
     stopDescriptionUpdater();
     stopPresenceUpdater();
+    stopReminders();
     await client.destroy();
     process.exit(0);
 }

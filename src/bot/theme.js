@@ -11,13 +11,15 @@ const COLORS = {
 const WEBSITE_URL = 'https://kwlew.dev';
 
 // Base embed every command starts from, so footer/branding stay consistent
-// without every command file repeating itself.
-function baseEmbed(interaction, { color = COLORS.brand } = {}) {
+// without every command file repeating itself. Takes an interaction, or a bare
+// client for embeds that aren't a reply to anything (the reminder DMs).
+function baseEmbed(source, { color = COLORS.brand } = {}) {
     const embed = new EmbedBuilder()
         .setColor(color)
         .setTimestamp();
 
-    const icon = interaction?.client?.user?.displayAvatarURL?.();
+    const client = source?.client ?? source;
+    const icon = client?.user?.displayAvatarURL?.();
     if (icon) {
         embed.setFooter({ text: 'TD Idle', iconURL: icon });
     } else {

@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, MessageFlags } = require("discord.js");
 const { baseEmbed, COLORS } = require("../../bot/theme");
-const { pay, assertPositiveInteger, getBalance, COIN, CURRENCY_NAME } = require("../../persistence/economy");
+const { pay, assertPositiveInteger, getBalance, getPreferences, COIN, CURRENCY_NAME } = require("../../persistence/economy");
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -52,11 +52,19 @@ module.exports = {
         }
 
         await assertPositiveInteger(await getBalance(interaction.user.id), 'pay');
+
+        // Read outside the try: a settings lookup that fails is not a failed
+        // payment, and shouldn't be reported to the payer as one.
+        const recipientPreferences = await getPreferences(user.id);
+
         try {
             await pay(interaction.user.id, user.id, amount);
-            await user.send({ embeds: [await buildYouGotPaidEmbed(interaction, interaction.user, amount)] }).catch(() => {
-                // Ignore if the user has DMs disabled or blocked the bot
-            });
+
+            if (recipientPreferences.payDm) {
+                await user.send({ embeds: [await buildYouGotPaidEmbed(interaction, interaction.user, amount)] }).catch(() => {
+                    // Ignore if the user has DMs disabled or blocked the bot
+                });
+            }
             const embed = await buildEmbed(interaction, user, amount);
             await interaction.reply({ embeds: [embed] });
         } catch (error) {

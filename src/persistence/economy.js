@@ -11,6 +11,33 @@ const MIN_WORK_AMOUNT = 100;
 const MAX_WORK_AMOUNT = 1200;
 const WORK_COOLDOWN_SECONDS = 60 * 60; // 1 hour
 
+// Preference key (what the rest of the bot passes around) -> wallets column.
+// Going through this map is what keeps a user-supplied option name from
+// reaching the update as a column.
+const PREFERENCE_KEYS = Object.freeze({
+    payDm: 'pay_dm',
+    dailyReminder: 'daily_reminder',
+    workReminder: 'work_reminder',
+});
+
+const PREFERENCE_COLUMNS = Object.values(PREFERENCE_KEYS).join(', ');
+
+// What a user who has never touched /settings gets. These mirror the column
+// defaults in supabase/schema.sql and cover the no-wallet-row-yet case too.
+const DEFAULT_PREFERENCES = Object.freeze({
+    payDm: true,
+    dailyReminder: false,
+    workReminder: false,
+});
+
+function toPreferences(row) {
+    return {
+        payDm: row?.pay_dm ?? DEFAULT_PREFERENCES.payDm,
+        dailyReminder: row?.daily_reminder ?? DEFAULT_PREFERENCES.dailyReminder,
+        workReminder: row?.work_reminder ?? DEFAULT_PREFERENCES.workReminder,
+    };
+}
+
 async function assertPositiveInteger(amount, fnName) {
     if (!Number.isInteger(amount) || amount <= 0) {
         throw new RangeError(`${fnName} amount must be a positive integer, got ${amount}`);
@@ -71,10 +98,97 @@ async function removeCoins(userId, amount) {
 
 async function pay(userId, recipientId, amount) {
     await assertPositiveInteger(amount, 'pay');
-    await assertPositiveInteger(await getBalance(userId), 'pay');
+    await assertPositiveInteger(await getBalance(userId)-amount, 'pay');
 
     await addCoins(recipientId, amount);
     await removeCoins(userId, amount);
+}
+
+// Every coin every user is holding, summed server-side — there's no wallet
+// count small enough to be worth pulling every balance over the wire for.
+async function getTotalCoinsInCirculation() {
+    const { data, error } = await supabase.rpc('total_coins');
+
+    if (error) {
+        log.error('Failed to read total coins in circulation:', error);
+        throw new Error('Could not read the total balance from the database.');
+    }
+
+    return Number(data ?? 0);
+}
+
+async function getPreferences(userId) {
+    const { data, error } = await supabase
+        .from('wallets')
+        .select(PREFERENCE_COLUMNS)
+        .eq('user_id', userId)
+        .maybeSingle();
+
+    if (error) {
+        log.error('Failed to read preferences:', error);
+        throw new Error('Could not read your settings from the database.');
+    }
+
+    return toPreferences(data);
+}
+
+// `changes` is a partial set of PREFERENCE_KEYS — anything else throws rather
+// than being silently dropped. Creates the wallet row if the user has never
+// earned anything yet, so settings work before a first /daily.
+async function setPreferences(userId, changes) {
+    const patch = {};
+
+    for (const [key, value] of Object.entries(changes)) {
+        const column = PREFERENCE_KEYS[key];
+
+        if (!column) {
+            throw new RangeError(`Unknown preference: ${key}`);
+        }
+        if (typeof value !== 'boolean') {
+            throw new RangeError(`Preference ${key} must be a boolean, got ${value}`);
+        }
+
+        patch[column] = value;
+    }
+
+    if (Object.keys(patch).length === 0) {
+        return getPreferences(userId);
+    }
+
+    const { data, error } = await supabase
+        .from('wallets')
+        .upsert({ user_id: userId, ...patch }, { onConflict: 'user_id' })
+        .select(PREFERENCE_COLUMNS)
+        .single();
+
+    if (error) {
+        log.error('Failed to save preferences:', error);
+        throw new Error('Could not save your settings.');
+    }
+
+    return toPreferences(data);
+}
+
+// Everyone whose cooldown has elapsed and who hasn't been reminded about it
+// since their last claim. The RPC marks them as reminded as it hands them
+// over, so a user gets at most one reminder per claim even if the DM bounces —
+// see the note on claim_due_reminders in supabase/schema.sql.
+async function claimDueReminders() {
+    const { data, error } = await supabase.rpc('claim_due_reminders', {
+        p_daily_cooldown_seconds: DAILY_COOLDOWN_SECONDS,
+        p_work_cooldown_seconds: WORK_COOLDOWN_SECONDS,
+    });
+
+    if (error) {
+        log.error('Failed to load due reminders:', error);
+        throw new Error('Could not load due reminders.');
+    }
+
+    return (data ?? []).map(row => ({
+        userId: row.reminder_user_id,
+        daily: row.daily_due === true,
+        work: row.work_due === true,
+    }));
 }
 
 async function claimDaily(userId) {
@@ -138,12 +252,17 @@ module.exports = {
     CURRENCY_NAME_SINGULAR,
     COIN,
     DAILY_AMOUNT,
+    DEFAULT_PREFERENCES,
     getBalance,
+    getTotalCoinsInCirculation,
     addCoins,
     removeCoins,
     pay,
     claimDaily,
     claimWork,
+    getPreferences,
+    setPreferences,
+    claimDueReminders,
     ensureReady,
     validUser,
 };
