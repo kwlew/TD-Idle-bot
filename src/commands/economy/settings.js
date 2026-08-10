@@ -1,69 +1,92 @@
-const { SlashCommandBuilder, MessageFlags } = require('discord.js');
+const {
+    SlashCommandBuilder,
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle,
+    MessageFlags,
+} = require('discord.js');
 const { baseEmbed, COLORS } = require('../../bot/theme');
 const { getPreferences, setPreferences, COIN, CURRENCY_NAME } = require('../../persistence/economy');
 const log = require('../../utils/logger');
 
-// Slash option name -> preference key. Discord option names have to be
-// lowercase, so they stay kebab-case while the preference keys stay camelCase.
-const OPTIONS = {
-    'pay-dm': 'payDm',
-    'daily-reminder': 'dailyReminder',
-    'work-reminder': 'workReminder',
-};
+const NAME = 'settings';
+
+// Every toggle the command shows, in display order. `key` is the preference key
+// setPreferences understands, and it's also the tail of the button's custom ID —
+// nothing outside this list can be toggled, so a hand-crafted ID goes nowhere.
+const SETTINGS = [
+    {
+        key: 'payDm',
+        label: 'Payment DMs',
+        hint: 'DMs you when someone pays you.',
+    },
+    {
+        key: 'dailyReminder',
+        label: 'Daily reminder',
+        hint: `DMs you when your daily ${CURRENCY_NAME} are ready to claim.`,
+    },
+    {
+        key: 'workReminder',
+        label: 'Work reminder',
+        hint: 'DMs you when you can work again.',
+    },
+];
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('settings')
-        .setDescription('View or change your settings. Run it with no options to see where you stand.')
-        .addBooleanOption(option =>
-            option.setName('pay-dm')
-                .setDescription('DM me when someone pays me.')
-                .setRequired(false))
-        .addBooleanOption(option =>
-            option.setName('daily-reminder')
-                .setDescription(`DM me when my daily ${CURRENCY_NAME} are ready to claim.`)
-                .setRequired(false))
-        .addBooleanOption(option =>
-            option.setName('work-reminder')
-                .setDescription('DM me when I can work again.')
-                .setRequired(false)),
+        .setName(NAME)
+        .setDescription('View and change your settings.'),
 
     async execute(interaction) {
-        const changes = {};
-
-        for (const [optionName, key] of Object.entries(OPTIONS)) {
-            const value = interaction.options.getBoolean(optionName);
-            if (value !== null) changes[key] = value; // null => option omitted, leave it alone
-        }
-
-        const changed = Object.keys(changes).length > 0;
-
-        const preferences = changed
-            ? await setPreferences(interaction.user.id, changes)
-            : await getPreferences(interaction.user.id);
-
-        if (changed) {
-            log.info(`User ${interaction.user.tag} (${interaction.user.id}) updated settings: ${JSON.stringify(changes)}`);
-        }
+        const preferences = await getPreferences(interaction.user.id);
 
         await interaction.reply({
-            embeds: [buildEmbed(interaction, preferences, changed)],
+            ...view(interaction, preferences),
             flags: MessageFlags.Ephemeral,
         });
     },
+
+    // Button clicks land here via interactionCreate. The message is ephemeral,
+    // so only the user who ran the command can press these in the first place.
+    async handleComponent(interaction) {
+        const [, action, key] = interaction.customId.split(':');
+        const setting = SETTINGS.find(entry => entry.key === key);
+
+        if (action !== 'toggle' || !setting) {
+            log.warn(`Ignoring unexpected settings component: ${interaction.customId}`);
+            return;
+        }
+
+        const current = await getPreferences(interaction.user.id);
+        const preferences = await setPreferences(interaction.user.id, { [key]: !current[key] });
+
+        log.info(`User ${interaction.user.tag} (${interaction.user.id}) set ${key} to ${preferences[key]}.`);
+
+        // update() edits the message the button lives on, so the panel stays a
+        // single ephemeral reply instead of stacking one per toggle.
+        await interaction.update(view(interaction, preferences, setting));
+    },
 };
+
+// The whole reply — embed plus buttons — rebuilt from the current preferences,
+// so the panel and the saved state can't drift apart.
+function view(interaction, preferences, changed = null) {
+    return {
+        embeds: [buildEmbed(interaction, preferences, changed)],
+        components: [buildButtons(preferences)],
+    };
+}
 
 function buildEmbed(interaction, preferences, changed) {
     const embed = baseEmbed(interaction, { color: changed ? COLORS.success : COLORS.brand })
         .setTitle(`${COIN} Your settings`)
         .setDescription(changed
-            ? 'Saved.'
-            : 'Set any of this command\'s options to change these.')
-        .addFields(
-            { name: 'Payment DMs', value: state(preferences.payDm), inline: true },
-            { name: 'Daily reminder', value: state(preferences.dailyReminder), inline: true },
-            { name: 'Work reminder', value: state(preferences.workReminder), inline: true },
-        );
+            ? `Saved — **${changed.label}** is now ${preferences[changed.key] ? 'on' : 'off'}.`
+            : 'Use the buttons below to turn these on or off.')
+        .addFields(SETTINGS.map(setting => ({
+            name: `${state(preferences[setting.key])} ${setting.label}`,
+            value: setting.hint,
+        })));
 
     // setFooter replaces the branded one baseEmbed put there, so carry its icon
     // across rather than losing it.
@@ -75,6 +98,21 @@ function buildEmbed(interaction, preferences, changed) {
     return embed;
 }
 
+function buildButtons(preferences) {
+    return new ActionRowBuilder().addComponents(SETTINGS.map(setting => {
+        const enabled = preferences[setting.key];
+
+        return new ButtonBuilder()
+            .setCustomId(`${NAME}:toggle:${setting.key}`)
+            .setLabel(setting.label)
+            .setEmoji(enabled ? '✅' : '❌')
+            .setStyle(enabled ? ButtonStyle.Success : ButtonStyle.Secondary);
+    }));
+}
+
+// Just the mark — each setting's button carries the same ✅/❌ and a matching
+// colour, so spelling out "On"/"Off" here only made the field titles clumsy
+// ("✅ On Payment DMs").
 function state(enabled) {
-    return enabled ? '✅ On' : '❌ Off';
+    return enabled ? '✅' : '❌';
 }
