@@ -27,11 +27,14 @@ async function buildEmbed(interaction) {
                     `**/daily** — Claim your daily ${CURRENCY_NAME}.\n` +
                     `**/work** — Work to earn ${CURRENCY_NAME}. Once per hour.\n` +
                     `**/pay** — Pay another user some of your ${CURRENCY_NAME}.\n` +
+                    `**/leaderboard** — See who's holding the most ${CURRENCY_NAME}.\n` +
+                    `**/profile** — See your (or someone else's) balance, rank, and cooldowns.\n` +
                     `**/settings** — Turn payment and reminder DMs on or off.`,
             },
             {
                 name: '🎲 Fun',
                 value: `**/coinflip** — Bet ${CURRENCY_NAME} on a coin flip.\n` +
+                    `**/slots** — Bet ${CURRENCY_NAME} on the slot machine.\n` +
                     `**/blackjack** — Play a game of blackjack.`,
             },
             {

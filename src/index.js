@@ -16,6 +16,7 @@ const { updatePresence, stopPresenceUpdater } = require('./bot/presence');
 const { getStats, startStatsUpdater, stopStatsUpdater, getVersion } = require('./api/stats');
 const { setDescription, updateDescription, stopDescriptionUpdater } = require('./bot/description');
 const { startReminders, stopReminders } = require('./bot/reminders');
+const { refundActiveGames } = require('./commands/fun/blackjack');
 const economy = require('./persistence/economy');
 
 const STATS_ACTIVE_INTERVAL = 3;  // seconds between polls while stats are moving
@@ -107,6 +108,7 @@ async function shutdown(signal) {
     stopDescriptionUpdater();
     stopPresenceUpdater();
     stopReminders();
+    await refundActiveGames(); // don't strand anyone's bet mid-hand across a restart
     await client.destroy();
     process.exit(0);
 }

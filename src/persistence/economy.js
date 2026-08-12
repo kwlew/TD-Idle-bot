@@ -236,6 +236,76 @@ async function claimWork(userId) {
     };
 }
 
+// Top N wallets by balance, for /leaderboard. Plain PostgREST query — unlike
+// the claim RPCs there's no multi-statement work or row locking to justify a
+// database function here.
+async function getLeaderboard(limit) {
+    const { data, error } = await supabase
+        .from('wallets')
+        .select('user_id, balance')
+        .order('balance', { ascending: false })
+        .limit(limit);
+
+    if (error) {
+        log.error('Failed to read leaderboard:', error);
+        throw new Error('Could not read the leaderboard from the database.');
+    }
+
+    return (data ?? []).map(row => ({ userId: row.user_id, balance: row.balance }));
+}
+
+// How many wallets outrank this user, so /leaderboard can show "You're #N"
+// for someone outside the displayed top. Ties all share a rank rather than
+// getting an arbitrary break — count(strictly greater) + 1.
+async function getRank(userId) {
+    const balance = await getBalance(userId);
+
+    const { count, error } = await supabase
+        .from('wallets')
+        .select('user_id', { count: 'exact', head: true })
+        .gt('balance', balance);
+
+    if (error) {
+        log.error('Failed to compute leaderboard rank:', error);
+        throw new Error('Could not compute your leaderboard rank.');
+    }
+
+    return { rank: (count ?? 0) + 1, balance };
+}
+
+// Read-only cooldown check — same math as claim_daily/claim_work's remaining-
+// time branch, but without touching the row. Used for display (/profile)
+// where actually claiming would be wrong.
+function cooldownStatus(lastClaimedAt, cooldownSeconds) {
+    if (!lastClaimedAt) return { ready: true, remainingMs: 0 };
+
+    const remainingMs = cooldownSeconds * 1000 - (Date.now() - new Date(lastClaimedAt).getTime());
+    return remainingMs > 0 ? { ready: false, remainingMs } : { ready: true, remainingMs: 0 };
+}
+
+// Everything /profile shows about a user in one query: balance, both claim
+// cooldowns, and preferences. A user who's never earned anything yet gets the
+// same defaults getBalance/getPreferences would give them.
+async function getProfile(userId) {
+    const { data, error } = await supabase
+        .from('wallets')
+        .select(`balance, last_daily, last_work, ${PREFERENCE_COLUMNS}`)
+        .eq('user_id', userId)
+        .maybeSingle();
+
+    if (error) {
+        log.error('Failed to read profile:', error);
+        throw new Error('Could not read that profile from the database.');
+    }
+
+    return {
+        balance: data?.balance ?? 0,
+        daily: cooldownStatus(data?.last_daily, DAILY_COOLDOWN_SECONDS),
+        work: cooldownStatus(data?.last_work, WORK_COOLDOWN_SECONDS),
+        preferences: toPreferences(data),
+    };
+}
+
 // Confirms the database is reachable and the RPCs exist — call once at
 // startup so a bad SUPABASE_URL/KEY or missing schema fails loudly instead of
 // on someone's first /daily.
@@ -255,6 +325,9 @@ module.exports = {
     DEFAULT_PREFERENCES,
     getBalance,
     getTotalCoinsInCirculation,
+    getLeaderboard,
+    getRank,
+    getProfile,
     addCoins,
     removeCoins,
     pay,
