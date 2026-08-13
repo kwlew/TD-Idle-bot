@@ -93,7 +93,7 @@ async function removeCoins(userId, amount) {
         throw new Error('Could not remove coins.');
     }
 
-    return data !== null; // null => the WHERE clause found no eligible row (insufficient funds)
+    return data !== null; // null, shit doesn't work.
 }
 
 async function pay(userId, recipientId, amount) {
@@ -104,8 +104,7 @@ async function pay(userId, recipientId, amount) {
     await removeCoins(userId, amount);
 }
 
-// Every coin every user is holding, summed server-side — there's no wallet
-// count small enough to be worth pulling every balance over the wire for.
+// Everything in circulation, for /stats. The RPC is a single-row SELECT SUM(balance) FROM wallets.
 async function getTotalCoinsInCirculation() {
     const { data, error } = await supabase.rpc('total_coins');
 
@@ -132,9 +131,7 @@ async function getPreferences(userId) {
     return toPreferences(data);
 }
 
-// `changes` is a partial set of PREFERENCE_KEYS — anything else throws rather
-// than being silently dropped. Creates the wallet row if the user has never
-// earned anything yet, so settings work before a first /daily.
+// preferences for /settings
 async function setPreferences(userId, changes) {
     const patch = {};
 
@@ -169,10 +166,7 @@ async function setPreferences(userId, changes) {
     return toPreferences(data);
 }
 
-// Everyone whose cooldown has elapsed and who hasn't been reminded about it
-// since their last claim. The RPC marks them as reminded as it hands them
-// over, so a user gets at most one reminder per claim even if the DM bounces —
-// see the note on claim_due_reminders in supabase/schema.sql.
+// All reminders n shit.
 async function claimDueReminders() {
     const { data, error } = await supabase.rpc('claim_due_reminders', {
         p_daily_cooldown_seconds: DAILY_COOLDOWN_SECONDS,
@@ -236,9 +230,7 @@ async function claimWork(userId) {
     };
 }
 
-// Top N wallets by balance, for /leaderboard. Plain PostgREST query — unlike
-// the claim RPCs there's no multi-statement work or row locking to justify a
-// database function here.
+// Top wallets, for /leaderboard. Returns an array of { userId, balance } objects.
 async function getLeaderboard(limit) {
     const { data, error } = await supabase
         .from('wallets')

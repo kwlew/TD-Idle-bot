@@ -19,8 +19,8 @@ const { startReminders, stopReminders } = require('./bot/reminders');
 const { refundActiveGames } = require('./commands/fun/blackjack');
 const economy = require('./persistence/economy');
 
-const STATS_ACTIVE_INTERVAL = 3;  // seconds between polls while stats are moving
-const STATS_IDLE_INTERVAL = 60;    // backoff once stats go quiet
+const STATS_ACTIVE_INTERVAL = 3;  // stats active cooldown.
+const STATS_IDLE_INTERVAL = 60;    // stats idle cooldown.
 const DESCRIPTION_INTERVAL = 120;
 const PRESENCE_INTERVAL = 20;
 const REMINDER_INTERVAL = 60;      // cooldowns are hours long, so a minute of slack is plenty

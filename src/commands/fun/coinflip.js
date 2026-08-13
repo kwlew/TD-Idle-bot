@@ -1,15 +1,15 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { getBalance, addCoins, removeCoins, COIN } = require('../../persistence/economy');
+const { getBalance, addCoins, removeCoins, COIN, CURRENCY_NAME, CURRENCY_NAME_SINGULAR } = require('../../persistence/economy');
 const { getCachedVersion } = require('../../api/stats');
 const { baseEmbed, COLORS } = require('../../bot/theme');
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('coinflip')
-        .setDescription('Bet coins on a coin flip.')
+        .setDescription(`Bet ${CURRENCY_NAME_SINGULAR} on a coin flip.`)
         .addIntegerOption(option =>
             option.setName('bet')
-                .setDescription('How many coins to wager.')
+                .setDescription(`How many ${CURRENCY_NAME_SINGULAR} to wager.`)
                 .setRequired(true)
                 .setMinValue(1))
         .addStringOption(option =>

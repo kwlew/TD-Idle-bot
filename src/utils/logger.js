@@ -17,7 +17,7 @@ function timestamp() {
 }
 
 function info(message, ...rest) {
-    console.log(timestamp(), icon.info, message, ...rest);
+    console.log(timestamp(), icon.info, " ", message, ...rest);
 }
 
 function success(message, ...rest) {
