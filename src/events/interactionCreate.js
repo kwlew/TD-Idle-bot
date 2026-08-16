@@ -39,7 +39,7 @@ async function dispatch(interaction, label, run) {
     try {
         await run();
     } catch (error) {
-        log.error(`Error handling ${label}:`, error);
+        log.error(`Error handling ${label} for ${interaction.user.tag} (${interaction.user.id}):`, error);
 
         const payload = {
             embeds: [errorEmbed('There was an error while executing this command.')],

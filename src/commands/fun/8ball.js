@@ -1,5 +1,4 @@
 const { SlashCommandBuilder } = require('discord.js');
-const log = require('../../utils/logger');
 const { baseEmbed, COLORS } = require('../../bot/theme');
 const { getCachedVersion } = require('../../api/stats');
 
@@ -32,7 +31,6 @@ async function buildResultEmbed(interaction, { answer }) {
         text: `TD Idle v${prerelease}`,
         iconURL: embed.data.footer?.iconURL,
     });
-    log.info("built embed");
 
     return embed;
 }
