@@ -10,7 +10,7 @@
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
     "restart-deploy": "pm2 stop tdidle-bot && node src/deploy-commands.js --release && pm2 start tdidle-bot && pm2 logs tdidle-bot",
-    "restart-deploy-dev": "pm2 stop tdidle-bot && node src/deploy-commands.js && pm2 start tdidle-bot && pm2 logs tdidle-bot",
+    "restart-deploy-dev": "node src/deploy-commands.js && node src/index.js",
     "restart": "pm2 restart tdidle-bot",
     "stop": "pm2 stop tdidle-bot",
     "deploy-commands": "node src/deploy-commands.js",

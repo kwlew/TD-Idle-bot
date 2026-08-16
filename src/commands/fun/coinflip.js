@@ -64,7 +64,7 @@ async function buildResultEmbed(interaction, { bet, choice, result, won, balance
 
     embed.setFooter({
         text: `TD Idle v${prerelease}`,
-        iconURL: embed.data.footer?.icon_url,
+        iconURL: embed.data.footer?.iconURL,
     });
 
     return embed;

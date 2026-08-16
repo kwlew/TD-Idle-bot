@@ -1,21 +1,21 @@
 const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { baseEmbed, WEBSITE_URL } = require('../../bot/theme');
+const { baseEmbed, WEBSITE_URL, GAME_SRC_URL, COLORS } = require('../../bot/theme');
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('site')
-        .setDescription('Replies with the link to the website.'),
+        .setName('game')
+        .setDescription('Replies with info about the game.'),
 
     async execute(interaction) {
-        const embed = baseEmbed(interaction)
-            .setTitle('🌐 TD Idle')
+        const embed = baseEmbed(interaction, { color: COLORS.purple })
+            .setTitle('🎮 TD Idle')
             .setDescription(`Visit the website: **[${WEBSITE_URL.replace(/^https?:\/\//, '')}](${WEBSITE_URL})**`);
 
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
-                .setLabel('Open Website')
+                .setLabel('View Source Code')
                 .setStyle(ButtonStyle.Link)
-                .setURL(WEBSITE_URL)
+                .setURL(GAME_SRC_URL)
                 .setEmoji('🔗'),
         );
 

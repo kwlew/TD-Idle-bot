@@ -6,9 +6,12 @@ const COLORS = {
     warning: 0xFFC93C,
     delay: 0xFA9B05,
     error: 0xFF4F4F,
+    purple: 0x9B59B6,
+    pink: 0xFF69B4,
 };
 
 const WEBSITE_URL = 'https://kwlew.dev';
+const GAME_SRC_URL = 'https://github.com/kwlew/TD-Idle/tree/main';
 
 // Base embed every command starts from, so footer/branding stay consistent
 // without every command file repeating itself. Takes an interaction, or a bare
@@ -36,4 +39,4 @@ function errorEmbed(message) {
         .setTimestamp();
 }
 
-module.exports = { COLORS, WEBSITE_URL, baseEmbed, errorEmbed };
+module.exports = { COLORS, WEBSITE_URL, GAME_SRC_URL, baseEmbed, errorEmbed };

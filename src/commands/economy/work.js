@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, MessageFlags } = require("discord.js");
+const { SlashCommandBuilder, MessageFlags, InteractionContextType } = require("discord.js");
 const { baseEmbed, COLORS } = require("../../bot/theme");
 const { formatDuration } = require("../../utils/format");
 const { claimWork, COIN, validUser, CURRENCY_NAME } = require("../../persistence/economy");
@@ -7,7 +7,8 @@ const log = require("../../utils/logger");
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("work")
-        .setDescription(`Work to earn ${CURRENCY_NAME}. Can be done once per hour.`),
+        .setDescription(`Work to earn ${CURRENCY_NAME}. Can be done once per hour.`)
+        .setContexts(InteractionContextType.Guild, InteractionContextType.BotDM),
     async execute(interaction) {
         if (!validUser(interaction.user.bot)) {
             await interaction.reply({ content: 'Bots do not have wallets.', flags: MessageFlags.Ephemeral });

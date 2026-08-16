@@ -1,5 +1,5 @@
-const { SlashCommandBuilder, MessageFlags } = require('discord.js');
-const { claimDaily, COIN, CURRENCY_NAME, validUser } = require('../../persistence/economy');
+const { SlashCommandBuilder, MessageFlags, InteractionContextType } = require('discord.js');
+const { claimDaily, COIN, CURRENCY_NAME} = require('../../persistence/economy');
 const { baseEmbed, COLORS } = require('../../bot/theme');
 const { formatDuration } = require('../../utils/format');
 const log = require('../../utils/logger');
@@ -7,7 +7,8 @@ const log = require('../../utils/logger');
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('daily')
-        .setDescription(`Claim your daily ${CURRENCY_NAME}.`),
+        .setDescription(`Claim your daily ${CURRENCY_NAME}.`)
+        .setContexts(InteractionContextType.Guild, InteractionContextType.BotDM),
 
     async execute(interaction) {
         const result = await claimDaily(interaction.user.id);
