@@ -7,7 +7,7 @@ const PRESENCE_TYPES = ["online", "stars", "golden", "idle"];
 let presenceTimer = null;
 
 function buildActivity(type) {
-    const { stars, golden, onlineUsers } = getCachedStats();
+    const { stars, golden, rainbow, onlineUsers } = getCachedStats();
 
     switch (type) {
         case "online":
@@ -16,6 +16,8 @@ function buildActivity(type) {
             return `Stars: ${stars.toLocaleString()}`;
         case "golden":
             return `Golden: ${golden.toLocaleString()}`;
+        case "rainbow":
+            return `Rainbow: ${getCachedStats().rainbow.toLocaleString()}`;
         case "idle":
             return "Idle";
         default:

@@ -30,11 +30,12 @@ async function getStats() {
         stats = {
             stars: toCount(data.stars),
             golden: toCount(data.golden),
+            rainbow: toCount(data.rainbow),
             onlineUsers: toCount(data.online),
         };
         lastUpdated = new Date();
 
-        log.debug(`Stats fetched — Stars: ${stats.stars}, Golden: ${stats.golden}, Online: ${stats.onlineUsers}`);
+        log.debug(`Stats fetched — Stars: ${stats.stars}, Golden: ${stats.golden}, Rainbow: ${stats.rainbow}, Online: ${stats.onlineUsers}`);
     } catch (error) {
         log.error("Error fetching stats:", error);
     }

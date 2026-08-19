@@ -5,10 +5,10 @@ let lastDescription = null;
 let descriptionTimer = null;
 
 async function buildDescription() {
-    const { stars, golden, onlineUsers } = await getCachedStats();
+    const { stars, golden, rainbow, onlineUsers } = await getCachedStats();
     const stable = await getCachedVersion("stable");
     const prerelease = await getCachedVersion("prerelease");
-    return `**Stars**: ${stars.toLocaleString()}, **Golden**: ${golden.toLocaleString()}, **Online**: ${onlineUsers.toLocaleString()}`
+    return `**Stars**: ${stars.toLocaleString()}, **Golden**: ${golden.toLocaleString()}, **Rainbow**: ${rainbow.toLocaleString()}, **Online**: ${onlineUsers.toLocaleString()}`
         + `\nBot created by: **https://kwlew.dev**`
         + `\nGame Version: **v${stable}** (stable) | **v${prerelease}** (prerelease)`;
 }

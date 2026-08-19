@@ -15,13 +15,14 @@ module.exports = {
 }
 
 async function buildEmbed(interaction) {
-    const { stars, golden, onlineUsers, lastUpdated } = getCachedStats();
-
+    const { stars, golden, rainbow, onlineUsers, lastUpdated } = getCachedStats();
+    // 🌈
     const embed = baseEmbed(interaction)
         .setTitle('📊 Current Stats')
         .addFields(
             { name: '⭐ Stars popped', value: `\`${stars.toLocaleString()}\``, inline: true },
             { name: '🌟 Golden stars popped', value: `\`${golden.toLocaleString()}\``, inline: true },
+            { name: '🌈 Rainbow stars popped', value: `\`${rainbow.toLocaleString()}\``, inline: true },
             { name: '👥 Online users', value: `\`${onlineUsers.toLocaleString()}\``, inline: true },
             { name: `${COIN} Total ${CURRENCY_NAME}`, value: `\`${await totalCoins()}\``, inline: true },
         );
