@@ -4,11 +4,11 @@ const supabase = require('./supabaseClient');
 const CURRENCY_NAME = 'gems';
 const CURRENCY_NAME_SINGULAR = 'gem';
 const COIN = '💎';
-const DAILY_AMOUNT = 1000; // 500-1500 coins
+const DAILY_AMOUNT = 3000; // 1500 - 4500, randomized per claim
 const DAILY_COOLDOWN_SECONDS = 24 * 60 * 60;
 
 const MIN_WORK_AMOUNT = 100;
-const MAX_WORK_AMOUNT = 1200;
+const MAX_WORK_AMOUNT = 800; // 100 - 800, randomized per claim
 const WORK_COOLDOWN_SECONDS = 60 * 60; // 1 hour
 
 // Preference key (what the rest of the bot passes around) -> wallets column.
